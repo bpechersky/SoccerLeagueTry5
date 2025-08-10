@@ -1,72 +1,83 @@
-import React, { useEffect, useState } from 'react'
-import { getPlayers, getTeams, createPlayer, updatePlayer, deletePlayer } from '../services/api'
+import React, { useEffect, useState } from 'react';
+import { getPlayers, getTeams, createPlayer, updatePlayer, deletePlayer } from '../services/api';
 
 export default function PlayersPage() {
-  const [players, setPlayers] = useState([])
-  const [teams, setTeams] = useState([])
-  const [form, setForm] = useState({ name: '', position: '', teamId: '' })
-  const [editingId, setEditingId] = useState(null)
+  const [players, setPlayers] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [form, setForm] = useState({ name: '', position: '', teamId: '' });
+  const [editingId, setEditingId] = useState(null);
 
   const load = async () => {
     try {
-      const [p, t] = await Promise.all([getPlayers(), getTeams()])
-      setPlayers(Array.isArray(p?.data) ? p.data : p?.data?.content ?? [])
-      setTeams(Array.isArray(t?.data) ? t.data : t?.data?.content ?? [])
+      const [p, t] = await Promise.all([getPlayers(), getTeams()]);
+      const pList = Array.isArray(p?.data) ? p.data : p?.data?.content ?? [];
+      const tList = Array.isArray(t?.data) ? t.data : t?.data?.content ?? [];
+      setPlayers(pList);
+      setTeams(tList);
     } catch (e) {
-      console.error('Failed to load players/teams', e)
-      setPlayers([])
-      setTeams([])
+      console.error('Failed to load players/teams', e);
+      setPlayers([]);
+      setTeams([]);
     }
-  }
+  };
 
   useEffect(() => {
-    load()                    // ✅ call the function you actually defined
-  }, [])
+    load();
+  }, []);
 
   const onSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+
     const body = {
       name: form.name.trim(),
       position: form.position.trim(),
-      team: form.teamId ? { id: Number(form.teamId) } : null,  // ✅ ensure number
-    }
+      team: form.teamId ? { id: Number(form.teamId) } : null, // server expects { id }
+    };
+
     try {
       if (editingId) {
-        await updatePlayer(editingId, body)
+        const { data: updated } = await updatePlayer(editingId, body);
+        setPlayers((prev) => prev.map((p) => (p.id === editingId ? updated : p)));
       } else {
-        await createPlayer(body)
+        const { data: created } = await createPlayer(body);
+        setPlayers((prev) => [...prev, created]);
       }
-      setForm({ name: '', position: '', teamId: '' })
-      setEditingId(null)
-      await load()
+
+      setForm({ name: '', position: '', teamId: '' });
+      setEditingId(null);
+      // Optional: keep a background refresh if you want guaranteed sync
+      // void load();
     } catch (err) {
-      console.error('Create/Update player failed', err)
+      console.error('Create/Update player failed', err);
     }
-  }
+  };
 
   const onEdit = (p) => {
-    setEditingId(p.id)
+    setEditingId(p.id);
     setForm({
       name: p.name ?? '',
       position: p.position ?? '',
       teamId: p.team?.id ?? '',
-    })
-  }
+    });
+  };
 
   const onDelete = async (id) => {
     try {
-      await deletePlayer(id)
-      await load()
+      await deletePlayer(id);
+      setPlayers((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
-      console.error('Delete failed', e)
+      console.error('Delete failed', e);
     }
-  }
+  };
 
   return (
     <div>
       <h2>Players</h2>
 
-      <form onSubmit={onSubmit} style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+      <form
+        onSubmit={onSubmit}
+        style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}
+      >
         <input
           placeholder="Name"
           value={form.name}
@@ -78,7 +89,6 @@ export default function PlayersPage() {
           onChange={(e) => setForm({ ...form, position: e.target.value })}
         />
 
-        {/* ✅ Team dropdown writes a number (or '') */}
         <select
           value={form.teamId}
           onChange={(e) =>
@@ -98,8 +108,8 @@ export default function PlayersPage() {
           <button
             type="button"
             onClick={() => {
-              setEditingId(null)
-              setForm({ name: '', position: '', teamId: '' })
+              setEditingId(null);
+              setForm({ name: '', position: '', teamId: '' });
             }}
           >
             Cancel
@@ -110,7 +120,11 @@ export default function PlayersPage() {
       <table border="1" cellPadding="6">
         <thead>
           <tr>
-            <th>ID</th><th>Name</th><th>Position</th><th>Team</th><th>Actions</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Team</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -129,5 +143,5 @@ export default function PlayersPage() {
         </tbody>
       </table>
     </div>
-  )
+  );
 }
