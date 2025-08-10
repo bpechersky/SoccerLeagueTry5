@@ -24,7 +24,6 @@ public class Team {
     private String city;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
     @Builder.Default
     private List<Player> players = new ArrayList<>();
 }

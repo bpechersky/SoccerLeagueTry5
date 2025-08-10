@@ -1,6 +1,7 @@
 package com.example.soccer.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Player {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,6 +21,5 @@ public class Player {
 
     @ManyToOne
     @JoinColumn(name = "team_id")
-    @JsonBackReference           // prevents infinite Team->Players->Team recursion
-    private Team team;
+    private Team team;       // now included in /api/players JSON
 }
