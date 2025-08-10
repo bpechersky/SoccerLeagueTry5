@@ -46,24 +46,23 @@ public class PlayerController {
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody PlayerRequest req) {
+    public ResponseEntity<Player> update(@PathVariable Long id, @RequestBody Player p) {
         return repo.findById(id).map(existing -> {
-            existing.setName(req.name());
-            existing.setPosition(req.position());
+            existing.setName(p.getName());
+            existing.setPosition(p.getPosition());
 
-            Team team = null;
-            if (req.teamId() != null) {
-                team = teamRepo.findById(req.teamId()).orElse(null);
-                if (team == null) {
-                    return ResponseEntity.badRequest().body("Unknown teamId: " + req.teamId());
-                }
+            if (p.getTeam() != null && p.getTeam().getId() != null) {
+                Team t = teamRepo.findById(p.getTeam().getId()).orElse(null);
+                existing.setTeam(t);
+            } else {
+                existing.setTeam(null);
             }
-            existing.setTeam(team);
 
             Player saved = repo.save(existing);
             return ResponseEntity.ok(saved);
         }).orElse(ResponseEntity.notFound().build());
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
