@@ -1,0 +1,36 @@
+# OS / misc
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar !  # keep this file; see rules below
+
+# Node / Vite (frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env files
+*.env
+*.env.local
+frontend/.env*
+backend/.env*
+
+# Build outputs anywhere (safety)
+**/node_modules/
+**/dist/
+**/build/
+**/target/
