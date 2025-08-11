@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, Long> {
@@ -14,6 +15,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     @Override
     @EntityGraph(attributePaths = {"homeTeam", "awayTeam"})
     List<Match> findAll();
+    Optional<Match> findById(Long id);
 
     @EntityGraph(attributePaths = {"homeTeam", "awayTeam"})
     @Query("""

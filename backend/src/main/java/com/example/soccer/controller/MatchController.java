@@ -2,6 +2,7 @@ package com.example.soccer.controller;
 
 import com.example.soccer.model.Match;
 import com.example.soccer.repo.MatchRepository;
+import com.example.soccer.repo.TeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.List;
 public class MatchController {
 
     private final MatchRepository matchRepo;
+    private final TeamRepository teamRepo;
 
     // GET /api/matches?teamId=1  (returns matches where team 1 is home OR away)
     // Optional filters: homeTeamId, awayTeamId, from, to
@@ -39,17 +41,33 @@ public class MatchController {
     }
 
     @PostMapping
-    public Match create(@RequestBody Match m) { return matchRepo.save(m); }
+    public Match create(@RequestBody Match m) {
+        if (m.getHomeTeam() != null && m.getHomeTeam().getId() != null) {
+            m.setHomeTeam(teamRepo.findById(m.getHomeTeam().getId()).orElse(null));
+        }
+        if (m.getAwayTeam() != null && m.getAwayTeam().getId() != null) {
+            m.setAwayTeam(teamRepo.findById(m.getAwayTeam().getId()).orElse(null));
+        }
+        Match saved = matchRepo.save(m);
+        // return with teams fully loaded
+        return matchRepo.findById(saved.getId()).orElse(saved);
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<Match> update(@PathVariable Long id, @RequestBody Match m) {
         return matchRepo.findById(id).map(ex -> {
             ex.setMatchDate(m.getMatchDate());
-            ex.setHomeTeam(m.getHomeTeam());
-            ex.setAwayTeam(m.getAwayTeam());
             ex.setHomeScore(m.getHomeScore());
             ex.setAwayScore(m.getAwayScore());
-            return ResponseEntity.ok(matchRepo.save(ex));
+
+            if (m.getHomeTeam() != null && m.getHomeTeam().getId() != null) {
+                ex.setHomeTeam(teamRepo.findById(m.getHomeTeam().getId()).orElse(null));
+            }
+            if (m.getAwayTeam() != null && m.getAwayTeam().getId() != null) {
+                ex.setAwayTeam(teamRepo.findById(m.getAwayTeam().getId()).orElse(null));
+            }
+            Match saved = matchRepo.save(ex);
+            return ResponseEntity.ok(matchRepo.findById(saved.getId()).orElse(saved));
         }).orElse(ResponseEntity.notFound().build());
     }
 
