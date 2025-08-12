@@ -1,0 +1,9 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Soccer League UI E2E" verbose="1" parallel="false">
+    <test name="UI">
+        <classes>
+            <class name="com.example.e2e.ui.TeamsPageTest"/>
+            <class name="com.example.e2e.ui.MatchesPageTest"/>
+        </classes>
+    </test>
+</suite>
