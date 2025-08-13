@@ -40,8 +40,11 @@ public class TeamsPageTest {
         WebElement table = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(By.cssSelector("table"))
         );
-        String text = table.getText().toLowerCase();
-        assertTrue(text.contains("arsenal"), "Expected 'Arsenal' in teams table");
-        assertTrue(text.contains("liverpool"), "Expected 'Liverpool' in teams table");
+        String text = table.getText();
+               // .toLowerCase();
+        assertTrue(text.contains("Arsenal"), "Expected 'Arsenal' in teams table");
+        assertTrue(text.contains("Liverpool"), "Expected 'Liverpool' in teams table");
+        assertTrue(text.contains("Manchester City"));
+        assertTrue(text.contains("Chelsea"));
     }
 }

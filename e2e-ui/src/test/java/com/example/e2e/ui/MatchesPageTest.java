@@ -44,6 +44,7 @@ public class MatchesPageTest extends BaseUiTest {
         // Wait for table to include the row
         waitForTextInTable("Arsenal");
         waitForTextInTable("Liverpool");
+        
 
         String table = driver.findElement(By.cssSelector("table")).getText();
         assertTrue(table.contains("Arsenal"), "Expected 'Arsenal' shown in matches table");
