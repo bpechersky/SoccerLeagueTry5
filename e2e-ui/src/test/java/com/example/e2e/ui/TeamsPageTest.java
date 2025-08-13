@@ -100,6 +100,49 @@ public class TeamsPageTest {
         Assert.assertTrue(playerHasUpdatedTeam,
                 "At least one player should have team name updated to 'Arsenal FC'");
     }
+    @Test
+    public void createAndDeleteTeam_shouldAppearThenDisappear() {
+        driver.get(baseUrl);
+
+        // Wait for table to be present (at least the tbody)
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table tbody")));
+
+        // Use a unique team name to avoid collisions
+        String uniqueName = "Test Team " + System.currentTimeMillis();
+        String city = "Test City";
+
+        // ---- Create new team ----
+        WebElement nameInput = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[placeholder='Name']")));
+        WebElement cityInput = driver.findElement(By.cssSelector("input[placeholder='City']"));
+        WebElement addBtn   = driver.findElement(By.xpath("//button[normalize-space()='Add']"));
+
+        nameInput.clear();
+        nameInput.sendKeys(uniqueName);
+        cityInput.clear();
+        cityInput.sendKeys(city);
+        addBtn.click();
+
+        // After creation, the page reloads teams; wait for the new row (by team name) to appear
+        By teamNameCell = By.xpath("//table/tbody/tr/td[2][normalize-space()='" + uniqueName + "']");
+        wait.until(ExpectedConditions.presenceOfElementLocated(teamNameCell));
+
+        // Sanity assert: team row exists and city matches in the 3rd column
+        WebElement rowNameCell = driver.findElement(teamNameCell);
+        WebElement row = rowNameCell.findElement(By.xpath("./ancestor::tr"));
+        String actualCity = row.findElement(By.xpath("./td[3]")).getText().trim();
+        Assert.assertEquals(actualCity, city, "City should match what we created");
+
+        // ---- Delete that team ----
+        WebElement deleteBtn = row.findElement(By.xpath(".//button[normalize-space()='Delete']"));
+        deleteBtn.click();
+
+        // Verify the row disappears (wait for absence)
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(teamNameCell));
+
+        // Extra check: ensure there is no row with that name anymore
+        boolean stillPresent = driver.findElements(teamNameCell).size() > 0;
+        Assert.assertFalse(stillPresent, "Team row should be removed after deletion");
+    }
 
 
 }
