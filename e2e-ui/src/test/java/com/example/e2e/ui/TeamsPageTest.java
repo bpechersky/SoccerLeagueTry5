@@ -5,6 +5,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.time.Duration;
@@ -47,4 +48,43 @@ public class TeamsPageTest {
         assertTrue(text.contains("Manchester City"));
         assertTrue(text.contains("Chelsea"));
     }
+
+    @Test
+    public void editTeamAndValidateOutput() {
+        driver.get(baseUrl);
+
+        // Wait until the table has at least one team
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table tbody tr")));
+
+        // Locate the first row’s Edit button
+        WebElement firstEditBtn = driver.findElement(By.xpath("//table/tbody/tr[1]//button[contains(text(), 'Edit')]"));
+        firstEditBtn.click();
+
+        // Wait until the form’s name input is pre-filled
+        WebElement nameInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("input[placeholder='Name']")));
+        WebElement cityInput = driver.findElement(By.cssSelector("input[placeholder='City']"));
+
+        // Clear and update values
+        nameInput.clear();
+        nameInput.sendKeys("Arsenal FC");
+        cityInput.clear();
+        cityInput.sendKeys("London, UK");
+
+        // Click Update
+        WebElement updateBtn = driver.findElement(By.xpath("//button[normalize-space()='Update']"));
+        updateBtn.click();
+
+        // Wait for table to refresh with updated name & city
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.xpath("//table/tbody/tr[1]/td[2]"), "Arsenal FC"));
+        wait.until(ExpectedConditions.textToBePresentInElementLocated(
+                By.xpath("//table/tbody/tr[1]/td[3]"), "London, UK"));
+
+        // Assertions
+        String updatedName = driver.findElement(By.xpath("//table/tbody/tr[1]/td[2]")).getText();
+        String updatedCity = driver.findElement(By.xpath("//table/tbody/tr[1]/td[3]")).getText();
+        Assert.assertEquals(updatedName, "Arsenal FC");
+        Assert.assertEquals(updatedCity, "London, UK");
+    }
+
 }
