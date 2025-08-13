@@ -68,6 +68,10 @@ public class PlayersPageCreateTest {
         WebElement rowNameCell = driver.findElement(nameCellLocator);
         WebElement row = rowNameCell.findElement(By.xpath("./ancestor::tr"));
 
+        // Verify player name in table
+        String actualName = row.findElement(By.xpath("./td[2]")).getText().trim();
+        Assert.assertEquals(actualName, playerName, "Player name should match what was entered");
+
         // Assuming: 1=ID, 2=Name, 3=Position, 4=Team (adjust indices if your table differs)
         String actualPosition = row.findElement(By.xpath("./td[3]")).getText().trim();
         String actualTeam     = row.findElement(By.xpath("./td[4]")).getText().trim();
