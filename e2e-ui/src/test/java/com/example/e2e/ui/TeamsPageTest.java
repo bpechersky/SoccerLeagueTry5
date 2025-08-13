@@ -27,6 +27,7 @@ public class TeamsPageTest {
         driver = new ChromeDriver();
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         baseUrl = System.getProperty("UI_BASE_URL", "http://localhost:5173");
+        driver.manage().window().maximize();
     }
 
     @AfterMethod(alwaysRun = true)
@@ -50,8 +51,8 @@ public class TeamsPageTest {
     }
 
     @Test
-    public void editTeamAndValidateOutput() {
-        driver.get(baseUrl);
+    public void editTeamAndValidateOutputAndPlayerLink() {
+        driver.get(baseUrl + "/teams");
 
         // Wait until the table has at least one team
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table tbody tr")));
@@ -80,11 +81,25 @@ public class TeamsPageTest {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(
                 By.xpath("//table/tbody/tr[1]/td[3]"), "London, UK"));
 
-        // Assertions
+        // Assertions on Teams page
         String updatedName = driver.findElement(By.xpath("//table/tbody/tr[1]/td[2]")).getText();
         String updatedCity = driver.findElement(By.xpath("//table/tbody/tr[1]/td[3]")).getText();
         Assert.assertEquals(updatedName, "Arsenal FC");
         Assert.assertEquals(updatedCity, "London, UK");
+
+        // ---------- Navigate to Players page ----------
+        driver.get(baseUrl + "/players");
+
+        // Wait for players table to be present
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table tbody tr")));
+
+        // Find any player row where the team column matches updatedName
+        boolean playerHasUpdatedTeam = driver.findElements(By.xpath("//table/tbody/tr/td[contains(text(), 'Arsenal FC')]"))
+                .size() > 0;
+
+        Assert.assertTrue(playerHasUpdatedTeam,
+                "At least one player should have team name updated to 'Arsenal FC'");
     }
+
 
 }
