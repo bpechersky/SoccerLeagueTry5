@@ -240,4 +240,82 @@ public class PlayersPageCreateTest {
         }
         return null;
     }
+    @Test
+    public void createAndDeletePlayer_shouldAppearThenDisappear() {
+        driver.get(BASE_URL);
+
+        // Wait for players table to be ready
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("table tbody")));
+
+        // Generate unique player name
+        String playerName = "Test Player " + System.currentTimeMillis();
+        String position = "Defender";
+
+        // Fill out the form
+        WebElement nameInput = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[placeholder='Name']")));
+        WebElement positionInput = driver.findElement(By.cssSelector("input[placeholder='Position']"));
+
+        // Pick a valid team from the dropdown
+        WebElement teamSelectEl = driver.findElement(By.tagName("select"));
+        Select teamSelect = new Select(teamSelectEl);
+        String chosenTeam = pickFirstRealTeam(teamSelect);
+        Assert.assertNotNull(chosenTeam, "No valid team found to assign to new player");
+
+        nameInput.clear();
+        nameInput.sendKeys(playerName);
+        positionInput.clear();
+        positionInput.sendKeys(position);
+
+        // Submit form
+        WebElement addBtn = driver.findElement(By.xpath("//button[normalize-space()='Add']"));
+        addBtn.click();
+
+        // Verify player row appears
+        By nameCellLocator = By.xpath("//table/tbody/tr/td[2][normalize-space()='" + playerName + "']");
+        wait.until(ExpectedConditions.presenceOfElementLocated(nameCellLocator));
+
+        WebElement rowNameCell = driver.findElement(nameCellLocator);
+        WebElement row = rowNameCell.findElement(By.xpath("./ancestor::tr"));
+
+        String actualPosition = row.findElement(By.xpath("./td[3]")).getText().trim();
+        String actualTeam = row.findElement(By.xpath("./td[4]")).getText().trim();
+        Assert.assertEquals(actualPosition, position, "Position should match entered value");
+        Assert.assertEquals(actualTeam, chosenTeam, "Team should match selected team");
+
+        // Click Delete on that player
+        WebElement deleteBtn = row.findElement(By.xpath(".//button[normalize-space()='Delete']"));
+        deleteBtn.click();
+
+        // Wait until row disappears
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(nameCellLocator));
+
+        // Confirm row no longer exists
+        boolean stillPresent = driver.findElements(nameCellLocator).size() > 0;
+        Assert.assertFalse(stillPresent, "Player row should be removed after deletion");
+    }
+
+    private String pickFirstRealTeamToAssignToCreatedPlayer(Select select) {
+        List<WebElement> options = select.getOptions();
+        for (WebElement opt : options) {
+            String text = opt.getText().trim().toLowerCase();
+            String value = opt.getAttribute("value") != null ? opt.getAttribute("value").trim().toLowerCase() : "";
+            boolean isPlaceholder =
+                    text.isEmpty() ||
+                            text.contains("no team") ||
+                            text.contains("none") ||
+                            text.contains("select") ||
+                            text.contains("choose") ||
+                            value.isEmpty() ||
+                            value.equals("0") ||
+                            value.equals("-1") ||
+                            value.equals("null") ||
+                            value.equals("undefined");
+            if (!isPlaceholder) {
+                String visibleText = opt.getText().trim();
+                select.selectByVisibleText(visibleText);
+                return visibleText;
+            }
+        }
+        return null;
+    }
 }
