@@ -22,7 +22,7 @@ public class MatchesPageTest extends BaseUiTest {
         }
     }
 
-    @Test
+    @Test(priority = 1)
     public void createsMatchAndShowsPopulatedNames() {
         // Make sure the teams exist first
         ensureTeam("Arsenal", "London");
