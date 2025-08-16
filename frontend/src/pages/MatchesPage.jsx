@@ -1,3 +1,4 @@
+// src/pages/MatchesPage.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { getMatches, getTeams, createMatch, updateMatch, deleteMatch } from '../services/api';
 
@@ -14,13 +15,14 @@ export default function MatchesPage() {
     matchDate: '',
   });
 
+  // Load matches and teams
   const fetchAll = useCallback(async () => {
     try {
       const [m, t] = await Promise.all([getMatches(), getTeams()]);
       const mData = Array.isArray(m?.data) ? m.data : m?.data?.content ?? [];
       const tData = Array.isArray(t?.data) ? t.data : t?.data?.content ?? [];
 
-      // Sort by date desc if present
+      // Sort matches by date descending
       mData.sort((a, b) => (b.matchDate || '').localeCompare(a.matchDate || ''));
 
       setMatches(mData);
@@ -41,15 +43,25 @@ export default function MatchesPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!form.homeTeamId || !form.awayTeamId) return;
+    if (!form.homeTeamId || !form.awayTeamId) {
+      alert('Pick both teams');
+      return;
+    }
+    if (form.homeTeamId === form.awayTeamId) {
+      alert('Home and Away teams must be different');
+      return;
+    }
+    if (!form.matchDate) {
+      alert('Pick a date');
+      return;
+    }
 
-    // Build backend-friendly body
     const body = {
       homeTeam: { id: Number(form.homeTeamId) },
       awayTeam: { id: Number(form.awayTeamId) },
       homeScore: form.homeScore !== '' ? Number(form.homeScore) : null,
       awayScore: form.awayScore !== '' ? Number(form.awayScore) : null,
-      matchDate: form.matchDate || null,
+      matchDate: form.matchDate,
     };
 
     try {
@@ -60,9 +72,10 @@ export default function MatchesPage() {
         await createMatch(body);
       }
       resetForm();
-      await fetchAll(); // ✅ force re-render from fresh server state
+      await fetchAll();
     } catch (err) {
-      console.error('Create/Update match failed', err);
+      console.error('Save match failed', err);
+      alert('Failed to save match');
     } finally {
       setSaving(false);
     }
@@ -75,7 +88,7 @@ export default function MatchesPage() {
       awayTeamId: m.awayTeam?.id ?? '',
       homeScore: m.homeScore ?? '',
       awayScore: m.awayScore ?? '',
-      matchDate: m.matchDate ?? '',
+      matchDate: m.matchDate ? String(m.matchDate).slice(0, 10) : '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -83,11 +96,18 @@ export default function MatchesPage() {
   const onDelete = async (id) => {
     try {
       await deleteMatch(id);
-      await fetchAll(); // ✅ refresh after delete
+      await fetchAll();
     } catch (err) {
       console.error('Delete match failed', err);
+      alert('Failed to delete match');
     }
   };
+
+  const teamOption = (t) => (
+    <option key={t.id} value={t.id}>
+      {t.name}
+    </option>
+  );
 
   return (
     <div>
@@ -95,32 +115,21 @@ export default function MatchesPage() {
 
       <form
         onSubmit={onSubmit}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(120px, 1fr))', gap: 8, marginBottom: 16 }}
       >
-        <select
-          value={form.homeTeamId}
-          onChange={(e) => setForm({ ...form, homeTeamId: e.target.value })}
-        >
+        {/* Home */}
+        <select value={form.homeTeamId} onChange={(e) => setForm({ ...form, homeTeamId: e.target.value })}>
           <option value="">Home</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
+          {teams.map(teamOption)}
         </select>
 
-        <select
-          value={form.awayTeamId}
-          onChange={(e) => setForm({ ...form, awayTeamId: e.target.value })}
-        >
+        {/* Away */}
+        <select value={form.awayTeamId} onChange={(e) => setForm({ ...form, awayTeamId: e.target.value })}>
           <option value="">Away</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
+          {teams.map(teamOption)}
         </select>
 
+        {/* Scores */}
         <input
           type="number"
           placeholder="Home Score"
@@ -133,6 +142,8 @@ export default function MatchesPage() {
           value={form.awayScore}
           onChange={(e) => setForm({ ...form, awayScore: e.target.value })}
         />
+
+        {/* Date */}
         <input
           type="date"
           value={form.matchDate}
@@ -151,25 +162,25 @@ export default function MatchesPage() {
         </div>
       </form>
 
-      <table border="1" cellPadding="6">
+      <table border="1" cellPadding="6" style={{ width: '100%', textAlign: 'center' }}>
         <thead>
           <tr>
             <th>Date</th>
-            <th>Home</th>
+            <th>Match</th>
             <th>Score</th>
-            <th>Away</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {matches.map((m) => (
             <tr key={m.id}>
-              <td>{m.matchDate || '-'}</td>
-              <td>{m.homeTeam?.name || '-'}</td>
+              <td>{m.matchDate ? String(m.matchDate).slice(0, 10) : '-'}</td>
               <td>
-                {(m.homeScore ?? '-')}&nbsp;:&nbsp;{(m.awayScore ?? '-')}
+                {m.homeTeam?.name || '-'} vs {m.awayTeam?.name || '-'}
               </td>
-              <td>{m.awayTeam?.name || '-'}</td>
+              <td>
+                {(m.homeScore ?? '-')} : {(m.awayScore ?? '-')}
+              </td>
               <td>
                 <button onClick={() => onEdit(m)}>Edit</button>
                 <button onClick={() => onDelete(m.id)}>Delete</button>
@@ -178,7 +189,7 @@ export default function MatchesPage() {
           ))}
           {!matches.length && (
             <tr>
-              <td colSpan={5} style={{ textAlign: 'center' }}>
+              <td colSpan={4} style={{ textAlign: 'center' }}>
                 No matches yet
               </td>
             </tr>

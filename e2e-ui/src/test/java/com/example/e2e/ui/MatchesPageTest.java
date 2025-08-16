@@ -25,65 +25,77 @@ public class MatchesPageTest extends BaseUiTest {
         }
     }
 
+    private int getRandomIndex(Select select, Random random, int avoidIndex) {
+        int optionsCount = select.getOptions().size();
+        if (optionsCount <= 1) {
+            throw new IllegalStateException("Not enough team options to select from");
+        }
+        int index;
+        do {
+            index = random.nextInt(optionsCount - 1) + 1; // 1 to size-1
+        } while (index == avoidIndex);
+        return index;
+    }
     @Test(priority = 1)
     public void createsMatchAndShowsPopulatedNames() {
-        // Make sure at least two teams exist
-        ensureTeam("Arsenal", "London");
-        ensureTeam("Liverpool", "Liverpool");
-
         go("/matches");
 
-        // Locate dropdowns
-        Select homeSel = new Select(driver.findElements(By.tagName("select")).get(0));
-        Select awaySel = new Select(driver.findElements(By.tagName("select")).get(1));
+        // Wait for form to appear
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("form")));
 
-        // Pick first valid home team
-        String homeTeam = pickFirstRealTeam(homeSel, null);
-        // Pick first valid away team that is different from home team
-        String awayTeam = pickFirstRealTeam(awaySel, homeTeam);
+        // Get the two <select> elements (Home, Away)
+        List<WebElement> selects = driver.findElements(By.tagName("select"));
+        if (selects.size() < 2) {
+            throw new IllegalStateException("Expected two team dropdowns");
+        }
 
-        // Fill scores and date
-        driver.findElement(By.cssSelector("input[placeholder='Home Score']")).sendKeys("2");
-        driver.findElement(By.cssSelector("input[placeholder='Away Score']")).sendKeys("1");
-        driver.findElement(By.cssSelector("input[type='date']")).sendKeys(LocalDate.now().toString());
+        Select homeSel = new Select(selects.get(0));
+        Select awaySel = new Select(selects.get(1));
 
-        // Submit match form
+        Random rnd = new Random();
+
+        // Pick random Home team (skip placeholder at index 0)
+        int homeIndex = getRandomIndex(homeSel, rnd, -1);
+        homeSel.selectByIndex(homeIndex);
+        String homeTeam = homeSel.getOptions().get(homeIndex).getText().trim();
+
+        // Pick random Away team (different from home)
+        int awayIndex = getRandomIndex(awaySel, rnd, homeIndex);
+        awaySel.selectByIndex(awayIndex);
+        String awayTeam = awaySel.getOptions().get(awayIndex).getText().trim();
+
+        // Random scores
+        int homeScore = rnd.nextInt(5) + 1;
+        int awayScore = rnd.nextInt(5) + 1;
+
+        driver.findElement(By.cssSelector("input[placeholder='Home Score']"))
+                .sendKeys(String.valueOf(homeScore));
+        driver.findElement(By.cssSelector("input[placeholder='Away Score']"))
+                .sendKeys(String.valueOf(awayScore));
+
+        // Date in yyyy-MM-dd
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        WebElement dateInput = driver.findElement(By.cssSelector("input[type='date']"));
+        dateInput.click();
+        dateInput.sendKeys(Keys.chord(Keys.CONTROL, "a")); // select all
+        dateInput.sendKeys(today);                         // type date
+        dateInput.sendKeys(Keys.TAB);                      // blur to trigger change
+
+
+
+        // Submit
         driver.findElement(By.cssSelector("button[type='submit']")).click();
 
-        // Wait for table to update
+        // Validate in table
         waitForTextInTable(homeTeam);
         waitForTextInTable(awayTeam);
 
-        // Validate in table text
         String table = driver.findElement(By.cssSelector("table")).getText();
-        assertTrue(table.contains(homeTeam), "Expected home team shown in matches table");
-        assertTrue(table.contains(awayTeam), "Expected away team shown in matches table");
+        assertTrue(table.contains(homeTeam), "Expected home team in matches table");
+        assertTrue(table.contains(awayTeam), "Expected away team in matches table");
     }
 
-    /**
-     * Selects and returns the first "real" team option, skipping placeholders and optionally avoiding one team.
-     */
-    private String pickFirstRealTeam(Select select, String avoidTeam) {
-        for (WebElement opt : select.getOptions()) {
-            String text = opt.getText() == null ? "" : opt.getText().trim();
-            String lower = text.toLowerCase();
 
-            boolean placeholder =
-                    text.isEmpty() ||
-                            lower.contains("select") ||
-                            lower.contains("choose") ||
-                            lower.contains("none") ||
-                            lower.contains("no team") ||
-                            lower.equals("-") ||
-                            lower.equals("—");
-
-            if (!placeholder && (avoidTeam == null || !text.equals(avoidTeam))) {
-                select.selectByVisibleText(text);
-                return text;
-            }
-        }
-        throw new IllegalStateException("No valid team found for dropdown");
-    }
 
     @Test(priority = 2)
     public void editMatchAndChangeTeamsScoresDate() {
@@ -157,17 +169,7 @@ public class MatchesPageTest extends BaseUiTest {
      * Returns a random valid index for the select, skipping placeholder (index 0)
      * and optionally skipping avoidIndex.
      */
-    private int getRandomIndex(Select select, Random random, int avoidIndex) {
-        int optionsCount = select.getOptions().size();
-        if (optionsCount <= 1) {
-            throw new IllegalStateException("Not enough team options to select from");
-        }
-        int index;
-        do {
-            index = random.nextInt(optionsCount - 1) + 1; // 1 to size-1
-        } while (index == avoidIndex);
-        return index;
-    }
+
 
 
 }
